@@ -1,0 +1,67 @@
+---
+title: "NOAA Storm Database: analysis of Impacts on Health and Economy"
+author: "Flavio Massimo Saldicco"
+date: "Tuesday, February 10, 2015"
+output: html_document
+---
+
+[]
+##Synopsis
+tbd
+
+##Data Processing
+
+###Getting the Data File
+The NOAA Storm Database contains a record of the events concerning severe weather occurred in the USA. It can be consulted and downloaded in CVS format at <http://www.ncdc.noaa.gov/stormevents/>. It is kept updated by NOAA and currently contains events up to Oct. 2014.
+
+The specific version used for this analysis contains events occurred in the USA from Jan. 1950 to Nov. 2011. It can be downloaded in a BZ2 compressed CSV file at the Coursera Reproducible Research link <https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2>. This analysis assumes that the data file has already been downloaded and is present in a locally accessible computer folder.
+
+###Downloading the Data File
+```{r, echo=TRUE}
+#try if file is present in the current home
+#if not, download it
+datafile <- "repdata%2Fdata%2FStormData.csv.bz2"
+if (!file.exists(paste0("~/", datafile))) {
+    url <- "http://d396qusza40orc.cloudfront.net/"
+    download.file(paste0(url, datafile), paste0("~/", datafile))
+}
+```
+
+###Creating the Dataset
+The dataset **weather_events** is created by reading the datafile. The bzfile connection is used, because the original file is BZ2 compressed.
+```{r, echo=TRUE}
+weather_events <- read.csv(bzfile(paste0("~/", datafile)))
+```
+
+###Cleaning the dataset
+#convert the event type field (EVTYPE) to upper case
+```{r, echo=TRUE}
+weather_events["EVTYPE"] <- toupper(weather_events["EVTYPE"])
+```
+
+
+
+
+##Results
+```{r, echo=TRUE}
+
+
+CasualtiesByEvent <- aggregate(weather_events[("FATALITIES")],
+                               by=weather_events["EVTYPE"],
+                               FUN="sum")
+
+
+```
+
+weather_events["INJURIES"],
+
+
+
+
+
+
+
+
+
+
+
