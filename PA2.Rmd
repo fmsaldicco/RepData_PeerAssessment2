@@ -36,7 +36,7 @@ weather_events <- read.csv(bzfile(paste0("~/", datafile)))
 ###Cleaning the dataset
 #convert the event type field (EVTYPE) to upper case
 ```{r, echo=TRUE}
-weather_events["EVTYPE"] <- toupper(weather_events["EVTYPE"])
+weather_events["EVTYPE"] <- toupper(weather_events[c("EVTYPE")])
 ```
 
 
@@ -46,7 +46,7 @@ weather_events["EVTYPE"] <- toupper(weather_events["EVTYPE"])
 ```{r, echo=TRUE}
 
 
-CasualtiesByEvent <- aggregate(weather_events[("FATALITIES")],
+CasualtiesByEvent <- aggregate(weather_events[c("FATALITIES", "INJURIES")],
                                by=weather_events["EVTYPE"],
                                FUN="sum")
 
