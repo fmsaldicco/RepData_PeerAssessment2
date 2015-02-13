@@ -34,13 +34,23 @@ weather_events <- read.csv(bzfile(paste0("~/", datafile)))
 ```
 
 ###Cleaning the dataset
-#convert the event type field (EVTYPE) to upper case
+
 ```{r, echo=TRUE}
-weather_events["EVTYPE"] <- toupper(weather_events[c("EVTYPE")])
+
+CasualtiesByEvent <- aggregate(weather_events[c("FATALITIES", "INJURIES")],
+                               by=weather_events["EVTYPE"],
+                               FUN="sum")
+
+head(CasualtiesByEvent, n = 20L)
 ```
 
-
-
+weather_events$EVTYPE <- toupper(as.character(weather_events$EVTYPE))
+ 
+    
+weather_events$EVTYPE[grepl("HAIL*", weather_events$EVTYPE)] <- "HAIL"
+weather_events$EVTYPE[grepl("HEAT*", weather_events$EVTYPE)] <- "HEAT"
+weather_events$EVTYPE[grepl("HEAVY RAIN*", weather_events$EVTYPE)] <- "HEAVY RAIN"
+weather_events$EVTYPE[grepl("SUMMARY*", weather_events$EVTYPE)] <- "UNKNOWN"
 
 ##Results
 ```{r, echo=TRUE}
@@ -53,13 +63,15 @@ CasualtiesByEvent <- aggregate(weather_events[c("FATALITIES", "INJURIES")],
 
 ```
 
-weather_events["INJURIES"],
 
 
 
 
-
-
+##Annex A
+List of recorded event types before cleaning
+```{r, echo=TRUE}
+CasualtiesByEvent["EVTYPE"]
+```
 
 
 
