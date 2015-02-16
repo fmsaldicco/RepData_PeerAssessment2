@@ -45,27 +45,175 @@ head(CasualtiesByEvent, n = 20L)
 ```
 
 weather_events$EVTYPE <- toupper(as.character(weather_events$EVTYPE))
- 
-    
-weather_events$EVTYPE[grepl("HAIL*", weather_events$EVTYPE)] <- "HAIL"
-weather_events$EVTYPE[grepl("HEAT*", weather_events$EVTYPE)] <- "HEAT"
-weather_events$EVTYPE[grepl("HEAVY RAIN*", weather_events$EVTYPE)] <- "HEAVY RAIN"
-weather_events$EVTYPE[grepl("SUMMARY*", weather_events$EVTYPE)] <- "UNKNOWN"
+
+weather_events$EVTYPE[grepl("AVALAN", weather_events$EVTYPE)] <- "AVALANCHE"
+#weather_events$EVTYPE[grepl("COAST|CST", weather_events$EVTYPE)] <- "COASTAL FLOODING"
+weather_events$EVTYPE[grepl("COLD", weather_events$EVTYPE)] <- "COLD"
+weather_events$EVTYPE[grepl("DRY", weather_events$EVTYPE)] <- "DRY"
+weather_events$EVTYPE[grepl("DUST|SMOKE|FUNNEL", weather_events$EVTYPE)] <- "DUST"
+weather_events$EVTYPE[grepl("FIRE", weather_events$EVTYPE)] <- "WILDFIRE"
+weather_events$EVTYPE[grepl("FLOOD", weather_events$EVTYPE)] <- "FLOOD"
+weather_events$EVTYPE[grepl("FREEZ|FROST", weather_events$EVTYPE)] <- "FREEZE"
+
+
+weather_events$EVTYPE[grepl("HAIL", weather_events$EVTYPE)] <- "HAIL"
+weather_events$EVTYPE[grepl("HEAT", weather_events$EVTYPE)] <- "HEAT"
+weather_events$EVTYPE[grepl("ICE", weather_events$EVTYPE)] <- "ICE"
+weather_events$EVTYPE[grepl("LAND", weather_events$EVTYPE)] <- "LANDSLIDE"
+
+weather_events$EVTYPE[grepl("LIGHT|LIGNT", weather_events$EVTYPE)] <- "LIGHTNING"
+weather_events$EVTYPE[grepl("LOW TEMP", weather_events$EVTYPE)] <- "LOW TEMPERATURE"
+weather_events$EVTYPE[grepl("MUD", weather_events$EVTYPE)] <- "MUD SLIDE"
+
+weather_events$EVTYPE[grepl("RAIN|PRECIP", weather_events$EVTYPE)] <- "RAIN"
+weather_events$EVTYPE[grepl("RIP|ROGUE|ROUGH|DROWN|SURF|SEA|WATER|WAVE|MARINE|TIDE", weather_events$EVTYPE)] <- "ROUGH WATERS"
+
+weather_events$EVTYPE[grepl("HURRI", weather_events$EVTYPE)] <- "HURRICANE"
+weather_events$EVTYPE[grepl("SNOW|BLIZZ", weather_events$EVTYPE)] <- "SNOW"
+weather_events$EVTYPE[grepl("SPOUT", weather_events$EVTYPE)] <- "WATERSPOUT"
+weather_events$EVTYPE[grepl("STORM", weather_events$EVTYPE)] <- "STORM"
+weather_events$EVTYPE[grepl("SUMMARY|OTHER|[?]", weather_events$EVTYPE)] <- "UNKNOWN"
+weather_events$EVTYPE[grepl("THUNDERSTORM|TSTM", weather_events$EVTYPE)] <- "THUNDERSTORM"
+weather_events$EVTYPE[grepl("TORN", weather_events$EVTYPE)] <- "TORNADO"
+weather_events$EVTYPE[grepl("UNSEAS|URBAN|RECORD|ABNOR", weather_events$EVTYPE)] <- "OTHER"
+
+weather_events$EVTYPE[grepl("VOLC", weather_events$EVTYPE)] <- "VOLCANO"
+weather_events$EVTYPE[grepl("WARM", weather_events$EVTYPE)] <- "WARM"
+weather_events$EVTYPE[grepl("WIND|WND|GUST", weather_events$EVTYPE)] <- "WIND"
+weather_events$EVTYPE[grepl("WINTER|WINTRY", weather_events$EVTYPE)] <- "WINTER WEATHER"
+
+
+#factorise EVTYPE
+weather_events$EVTYPE <- factor(weather_events$EVTYPE)
+
+According to [], para. 2.7, page 12, only three type of damage exponents should be present: K (1,000), M (1,000,000) and B (1,000,000,000). Unfortunately, the full list of exponents for property damages shows:
+unique(weather_events$PROPDMGEXP)
+
+And for crop damages:
+unique(weather_events$CROPDMGEXP)
+
+Therefore, we need a strategy to cope with these information.
+Let's try to figure out the impact of the unexpected letters in the Damages.
+
+```{r, echo=TRUE}
+DamagesByPropExp <- aggregate(weather_events[c("PROPDMG")],
+                               by=weather_events["PROPDMGEXP"],
+                               FUN="sum")
+
+And in the Crop Damages:
+
+DamagesByCropExp <- aggregate(weather_events[c("CROPDMG")],
+                               by=weather_events["CROPDMGEXP"],
+                               FUN="sum")
+```
+
+Taking into consideration that we don't have a clue concerning the meaning of those letters, and that the impact in economical terms should not substantially modify our analysis, the decision is made to ignore the records corresponding to those letters.
+Concerning the lowercase "m" and "k" present, they will be made uppercase and considered as "M" and "K".
+
+```{r, echo=TRUE}
+econ_impact <- subset(weather_events, select=c(EVTYPE, PROPDMG, PROPDMGEXP,
+    CROPDMG, CROPDMGEXP))
+econ_impact$PROPVAL <- 0
+econ_impact$CROPVAL <- 0
+econ_impact$PROPDMGEXP <- toupper(as.character(econ_impact$PROPDMGEXP))
+econ_impact$CROPDMGEXP <- toupper(as.character(econ_impact$CROPDMGEXP))
+
+for (i in 1:nrow(econ_impact)) {
+
+    #properties
+    if (econ_impact$PROPDMGEXP[i] == "K") {
+        econ_impact$PROPVAL[i] <- econ_impact$PROPDMG[i] * 1000
+    } else if (econ_impact$PROPDMGEXP[i] == "M") {
+        econ_impact$PROPVAL[i] <- econ_impact$PROPDMG[i] * 1000000
+    } else if (econ_impact$PROPDMGEXP[i] == "B") {
+        econ_impact$PROPVAL[i] <- econ_impact$PROPDMG[i] * 1000000000
+    } else {
+        econ_impact$PROPVAL[i] <- 0
+    }
+
+    #crop
+    if (econ_impact$CROPDMGEXP[i] == "K") {
+        econ_impact$CROPVAL[i] <- econ_impact$CROPDMG[i] * 1000
+    } else if (econ_impact$CROPDMGEXP[i] == "M") {
+        econ_impact$CROPVAL[i] <- econ_impact$CROPDMG[i] * 1000000
+    } else if (econ_impact$CROPDMGEXP[i] == "B") {
+        econ_impact$CROPVAL[i] <- econ_impact$CROPDMG[i] * 1000000000
+    } else {
+        econ_impact$CROPVAL[i] <- 0
+    }
+
+}
+```
 
 ##Results
 ```{r, echo=TRUE}
 
-
+#impact to health
 CasualtiesByEvent <- aggregate(weather_events[c("FATALITIES", "INJURIES")],
                                by=weather_events["EVTYPE"],
                                FUN="sum")
 
 
+top10Fatalities <- head(CasualtiesByEvent[order(CasualtiesByEvent$FATALITIES, decreasing=TRUE),], 10)
+top10Fatalities
+
+top10Injuries <- head(CasualtiesByEvent[order(CasualtiesByEvent$INJURIES, decreasing=TRUE),], 10)
+
+top10Injuries
+
+par(mfrow=c(2,1))
+par(cex = 0.6)
+barplot(top10Fatalities$FATALITIES,
+        names=top10Fatalities$EVTYPE,
+        axes=FALSE,
+        main="Top 10 Casualties by Type of Event - USA 1950-2011",
+        ylab="Fatalities")
+axis(2, at=seq(0, 7000, 500))
+
+barplot(top10Injuries$INJURIES,
+        names=top10Injuries$EVTYPE,
+        axes=FALSE,
+        ylab="Injuries",
+        sub="Source: NOAA")
+axis(2, at=seq(0, 100000, 15000))
+
+
 ```
+It appears that tornadoes are, by far, the most dangerous type of event for human health, causing the highest number of both fatalities and injuries.
+ 
+
+```{r, echo=TRUE}
+#impact to economy
+DamagesByEvent <- aggregate(econ_impact[c("PROPVAL", "CROPVAL")],
+                               by=econ_impact["EVTYPE"],
+                               FUN="sum")
+
+
+top10PropDamages <- head(DamagesByEvent[order(DamagesByEvent$PROPVAL, decreasing=TRUE),], 10)
+top10PropDamages
+
+top10CropDamages <- head(DamagesByEvent[order(DamagesByEvent$CROPVAL, decreasing=TRUE),], 10)
+top10CropDamages
+
+par(mfrow=c(2,1))
+par(cex = 0.6)
+barplot(top10PropDamages$PROPVAL,
+        names=top10PropDamages$EVTYPE,
+        axes=FALSE,
+        main="Top 10 Damages by Type of Event - USA 1950-2011",
+        ylab="Damages to Properties")
+axis(2, at=seq(0, 200e9, 50e9))
+
+barplot(top10CropDamages$CROPVAL,
+        names=top10CropDamages$EVTYPE,
+        axes=FALSE,
+        ylab="Damages to Crop FIelds")
+axis(2, at=seq(0, 100000, 15000))
 
 
 
 
+```
 
 ##Annex A
 List of recorded event types before cleaning
